@@ -5,11 +5,64 @@
 //Dependencies
 
 const http = require('http');
+const https = require('https');
 const url = require('url');
 const StringDecoder = require('string_decoder').StringDecoder;
+const config = require('./config.js');
+const fs = require('fs');
+const  _data = require('./lib/data');
 
-// The server should respond to all requests with a string
-const server = http.createServer( (req, res) => {
+// Testing
+// @TODO  delete this
+// Create a file
+_data.create('test', 'newFile', {'foo': 'bar'}, function (error) {
+    console.log('This was the error', error);
+});
+
+// Read file
+_data.read('test', 'newFile', function (error, data) {
+    console.log('This was the error', error, 'and this was the data', data);
+});
+
+//Updating file
+_data.update('test', 'newFile', {'fizz':'buzz'}, function (error) {
+    console.log('This was the error', error);
+});
+// Delete file
+_data.delete('test', 'newFile', function (error) {
+    console.log('This was the error', error);
+});
+
+
+// Instantiate the http server
+const httpServer = http.createServer( (req, res) => {
+    unifiedServer(req, res);
+
+});
+
+// Start the  HTTP server
+httpServer.listen(config.httpPort,  () => {
+    console.log('The server is listening on port '+ config.httpPort + " in " + config.envName + " mode");
+});
+
+// Instantiate the HTTPS server
+let httpsServerOptions = {
+    'key': fs.readFileSync('./https/key.pem'),
+    'cert': fs.readFileSync('./https/cert.pem')
+};
+const httpsServer = https.createServer( httpsServerOptions, function(req, res) {
+    unifiedServer(req, res);
+
+});
+
+
+//Start the HTTPS server
+httpsServer.listen(config.httpsPort,  function() {
+    console.log('The server is listening on port '+ config.httpsPort + " in " + config.envName + " mode");
+});
+
+// All the server logic for both the http and https server
+const unifiedServer = function(req, res){
 
     // Get the URL and parse it
     const parseUrl= url.parse(req.url, true);
@@ -59,6 +112,7 @@ const server = http.createServer( (req, res) => {
             const payloadString = JSON.stringify(payload);
 
             //Return the res
+            res.setHeader('Content-Type', 'application/json');
             res.writeHead(statusCode);
             res.end(payloadString);
 
@@ -75,29 +129,25 @@ const server = http.createServer( (req, res) => {
         });
 
     });
-
     // Get  the query string as an object
     const queryStringObject = parseUrl.query;
 
-
-
-});
-
-// Start the server , and have it listen on port 3000
-server.listen(3000,  () => {
-    console.log('The server is listening on port 3000');
-});
+};
 
 // Define handlers
-
 const handlers = {};
 
-// Sample handler
-handlers.sample = function (data, cb) {
-    // cb a http status code, and a payload object
-    cb(406, {'name': 'sample handler'});
-
+// Ping Handler
+handlers.ping = function(data, callback){
+    callback(200);
 };
+
+// // Sample handler
+// handlers.sample = function (data, cb) {
+//     // cb a http status code, and a payload object
+//     cb(406, {'name': 'sample handler'});
+//
+// };
 
 // Not found handler
 handlers.notFound = function (data, cb) {
@@ -106,5 +156,5 @@ handlers.notFound = function (data, cb) {
 
 // Define a request router
  const router = {
-     'sample': handlers.sample
+     'ping': handlers.ping
  };
