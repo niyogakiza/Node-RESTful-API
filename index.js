@@ -8,9 +8,11 @@ const http = require('http');
 const https = require('https');
 const url = require('url');
 const StringDecoder = require('string_decoder').StringDecoder;
-const config = require('./config.js');
+const config = require('./lib/config.js');
 const fs = require('fs');
 const  _data = require('./lib/data');
+const handlers = require('./lib/handlers');
+const helpers = require('./lib/helpers');
 
 // Testing
 // @TODO  delete this
@@ -97,7 +99,7 @@ const unifiedServer = function(req, res){
             'queryStringObject': queryStringObject,
             'method': method,
             'headers': headers,
-            'payload': buffer
+            'payload': helpers.parseJsonToObject(buffer)
         };
 
         //Route the request to the handler specified in the router
@@ -134,27 +136,11 @@ const unifiedServer = function(req, res){
 
 };
 
-// Define handlers
-const handlers = {};
 
-// Ping Handler
-handlers.ping = function(data, callback){
-    callback(200);
-};
-
-// // Sample handler
-// handlers.sample = function (data, cb) {
-//     // cb a http status code, and a payload object
-//     cb(406, {'name': 'sample handler'});
-//
-// };
-
-// Not found handler
-handlers.notFound = function (data, cb) {
-    cb(404);
-};
 
 // Define a request router
  const router = {
-     'ping': handlers.ping
+     'ping': handlers.ping,
+     'users': handlers.users,
+     'tokens': handlers.tokens
  };
